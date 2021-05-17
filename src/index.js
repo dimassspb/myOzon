@@ -10,7 +10,6 @@ function toggleCheckBox() {
     }
   });
 }
-toggleCheckBox();
 // end checkbox
 
 // cart
@@ -29,7 +28,6 @@ function toggleCart() {
     });
   });
 }
-toggleCart();
 // end cart
 
 // goods
@@ -77,49 +75,42 @@ function addCart() {
     }
   };
 }
-addCart();
+
 // end goods
 
 // фильтр акции
 function actionPage() {
   const cards = document.querySelectorAll('.goods .card');
-  const checkbox = document.querySelector('.filter-check_checkbox');
+  const discountCheckbox = document.querySelector('.filter-check_checkbox');
   const goods = document.querySelector('.goods');
   const min = document.getElementById('min');
   const max = document.getElementById('max');
   const search = document.querySelector('.search-wrapper_input');
   const searchBtn = document.querySelector('.search-btn');
 
-  checkbox.addEventListener('click', () => {
-    cards.forEach((el) => {
-      if (checkbox.checked) {
-        if (!el.querySelector('.card-sale')) {
-          el.parentNode.style.display = 'none';
-        }
-      } else {
-        el.parentNode.style.display = '';
-      }
-    });
-  });
-  function filterPrice() {
+  discountCheckbox.addEventListener('click', filter);
+
+  function filter() {
     cards.forEach((el) => {
       const cardPrice = el.querySelector('.card-price');
       const price = parseFloat(cardPrice.textContent);
+      const discount = el.querySelector('.card-sale');
 
       if (
         (min.value && price < min.value) ||
         (max.value && price > max.value)
       ) {
         el.parentNode.style.display = 'none';
-        // el.parentNode.remove();
+      } else if (discountCheckbox.checked && !discount) {
+        el.parentNode.style.display = 'none';
       } else {
         el.parentNode.style.display = '';
-        // goods.appendChild(el.parentNode)
       }
     });
   }
-  min.addEventListener('change', filterPrice);
-  max.addEventListener('change', filterPrice);
+
+  min.addEventListener('change', filter);
+  max.addEventListener('change', filter);
 
   searchBtn.addEventListener('click', () => {
     const searchText = new RegExp(search.value.trim(), 'i'); // 'i' флаг
@@ -134,5 +125,100 @@ function actionPage() {
     search.value = '';
   });
 }
-actionPage();
+
 // конец фильтр акции
+
+// получение данных с сервера
+
+function getData() {
+  const goodsWrapper = document.querySelector('.goods');
+  return fetch('../db/db.json')
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error('Данные не получены, ошибка: ' + response.status);
+      }
+    })
+    .then((data) => {
+      return data;
+    })
+    .catch((err) => {
+      console.warn(err);
+      goodsWrapper.innerHTML =
+        '<div style="color:red; font-size:30px">Упс... Что-то пошло не так ...</div>';
+    });
+}
+// выводим карточки товара
+function renderCards(data) {
+  data.goods.forEach((good) => {
+    const goodsWrapper = document.querySelector('.goods');
+    const card = document.createElement('div');
+    card.className = 'col-12 col-md-6 col-lg-4 col-xl-3';
+    card.innerHTML = `
+								<div class="card" data-category=${good.category}>
+                ${good.sale ? '<div class="card-sale">🔥Hot Sale🔥</div>' : ''}
+									<div class="card-img-wrapper">
+										<span class="card-img-top"
+											style="background-image: url(${good.img})"></span>
+									</div>
+									<div class="card-body justify-content-between">
+										<div class="card-price" style="${good.sale ? 'color:red' : ''}">${
+      good.price
+    } ₽</div>
+										<h5 class="card-title">${good.title}</h5>
+										<button class="btn btn-primary">В корзину</button>
+									</div>
+								</div>
+							
+    `;
+    goodsWrapper.appendChild(card);
+  });
+}
+//  end получение данных с сервера
+
+// создаем каталог
+
+function renderCatalog() {
+  const cards = document.querySelectorAll('.goods .card');
+  const catalogList = document.querySelector('.catalog-list');
+  const btn = document.querySelector('.catalog-button');
+  const catalogWrapper = document.querySelector('.catalog');
+
+  const categories = new Set();
+  cards.forEach((card) => {
+    categories.add(card.dataset.category);
+  });
+  categories.forEach((el) => {
+    const li = document.createElement('li');
+    li.textContent = el;
+    catalogList.appendChild(li);
+  });
+  btn.addEventListener('click', (event) => {
+    if (catalogWrapper.style.display) {
+      catalogWrapper.style.display = '';
+    } else {
+      catalogWrapper.style.display = 'block';
+    }
+    if (event.target.tagName === 'LI') {
+      cards.forEach((card) => {
+        if(card.dataset.category === event.target.textContent) {
+          card.parentNode.style.display = ''
+        } else {
+          card.parentNode.style.display = 'none'
+        }
+      })
+    }
+  });
+}
+
+// end создаем каталог
+
+getData().then((data) => {
+  renderCards(data);
+  toggleCheckBox();
+  toggleCart();
+  addCart();
+  actionPage();
+  renderCatalog();
+});
