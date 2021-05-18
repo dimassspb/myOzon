@@ -8,10 +8,10 @@ import { actionPage } from './modules/actionPage';
 
 (async function () {
   const data = await getData();
-    renderCards(data);
-    renderCatalog();
-    toggleCheckBox();
-    toggleCart();
-    addCart();
-    actionPage();
+  renderCards(data);
+  renderCatalog();
+  toggleCheckBox();
+  toggleCart();
+  addCart();
+  actionPage();
 })();
